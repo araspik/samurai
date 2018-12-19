@@ -1,0 +1,30 @@
+name "smake"
+description "A Make program for SDLang-formatted Makefiles."
+authors "ARaspiK"
+copyright "Copyright © 2018, ARaspiK"
+license "MIT"
+
+targetType "none"
+
+dependency "smake:lib" version="*"
+dependency "smake:app" version="*"
+
+subPackage {
+	name "lib"
+	targetType "library"
+	targetName "smake"
+	sourcePaths "smake"
+	importPaths "."
+
+	dependency "sdlang-d" version="~>0.10.4"
+}
+
+subPackage {
+	name "app"
+	targetType "executable"
+	targetName "app"
+	sourcePaths "front"
+	importPaths "."
+
+	dependency "smake:lib" version="*"
+}
