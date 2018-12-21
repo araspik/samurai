@@ -13,6 +13,7 @@ subPackage {
 	name "lib"
 	targetType "library"
 	targetName "smake"
+	targetPath "build"
 	sourcePaths "smake"
 	importPaths "."
 
@@ -22,7 +23,8 @@ subPackage {
 subPackage {
 	name "app"
 	targetType "executable"
-	targetName "app"
+	targetName "smake"
+	targetPath "build"
 	sourcePaths "front"
 	importPaths "."
 

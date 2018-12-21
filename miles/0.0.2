@@ -1,0 +1,23 @@
+```
+rule "foo" {
+	cmd "gcc foo.c -o foo"
+	cmd "gcc foo.c -S -o foo.s"
+	in "foo.c" "foo.h"
+	out "foo" "foo.s"
+}
+```
+
+$ smake input
+foo: {"foo.c" "foo.h"} -> {"foo" "foo.s"} via {"gcc foo.c -o foo", "gcc foo.c -S -o foo.s"}
+* "foo.s" older than "foo.c", needs update.
+* "foo" nonexistent, needs update.
+
+SMake can read rules, and format and output them.
+  Rules can be named.
+  Single commands are accepted.
+  Inputs and outputs are accepted.
+SMake can understand which output files need to be updated.
+  Input files' timestamps can be checked and compared to output files' timestamps.
+  Nonexistent output files are handled gracefully (as must-be-updated)
+  Multiple commands, inputs, and outputs are accepted.
+  SMake can infer the file name (`SMakefile`) if not given any.

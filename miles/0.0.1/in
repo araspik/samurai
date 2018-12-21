@@ -1,5 +1,0 @@
-rule "foo" {
-	cmd "gcc foo.c -o foo"
-	in "foo.c"
-	out "foo"
-}

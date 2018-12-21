@@ -41,4 +41,12 @@ struct File {
 
 		return rules.format!"%-(%s%|\n%)";
 	}
+
+	/// Possibly verbose stringifier.
+	string toString(bool verbose) const {
+		import std.algorithm: map;
+		import std.format;
+
+		return rules.map!(r => r.toString(verbose)).format!"%-(%s%|\n%)";
+	}
 }
