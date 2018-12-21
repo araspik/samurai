@@ -22,29 +22,32 @@ struct Rule {
 	string[] commands;
 	/// Input and output file names.
 	string[] inputs, outputs;
-	/// Cached modification timestamps for inputs.
-	SysTime[] inputTimes;
-	/// Whether update is needed or not.
-	bool updateNeeded;
 
-	/// Constructor.
-	this(string name, string[] commands, string[] inputs, string[] outputs) {
-		import std.algorithm, std.array;
+	/// Input modification times.
+	@property SysTime[] inputTimes() const {
+		import std.algorithm: map;
+		import std.array: array;
+		import std.functional: memoize;
 
-		this.name = name;
-		this.commands = commands;
-		this.inputs = inputs;
-		this.outputs = outputs;
+		return memoize!(() => inputs.map!timeLastModified.array)();
+	}
 
-		// Initialize inputTimes with current timestamps.
-		this.inputTimes = inputs.map!timeLastModified.array;
-		// Keep temporary latest modification timestamp.
-		auto lastMod = inputTimes.maxElement;
+	/// Latest input modification time.
+	@property SysTime lastInputMod() const {
+		import std.algorithm: maxElement;
+		import std.functional: memoize;
 
-		// Check for first output needing update, and set updateNeeded.
-		this.updateNeeded = !outputs
-			.until!(o => !o.exists || o.timeLastModified < lastMod)
-			.empty;
+		return memoize!(() => inputTimes.maxElement)();
+	}
+
+	/// Whether an update is needed or not.
+	@property bool updateNeeded() const {
+		import std.algorithm: until;
+		import std.functional: memoize;
+
+		return memoize!(() => !outputs
+				.until!(o => !o.exists || o.timeLastModified < lastInputMod)
+				.empty)();
 	}
 
 	/**** Returns verbose information about update requirements.
