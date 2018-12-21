@@ -47,26 +47,55 @@ struct Rule {
 			.empty;
 	}
 
-	/// Returns verbose information about update requirements.
-	string[] getUpdateInfo() const {
-		auto res = new string[outputs.length];
+	/**** Returns verbose information about update requirements.
+		* 
+		* The information is returned as a lazy range of output-update information.
+		* Each element represents one output.
+		* The properties of each element are:
+		* * `.output`: Name of output file.
+		* * `.needsUpdate`: Whether the output needs to be updated.
+		* * `.exists`: Whether the file exists.
+		* * `.input`: An input file which the output is older than.
+		*             If this doesn't make sense then it is 'null', which occurs
+		*             when the output is newer than all input files or it just
+		*             doesn't exist at all.
+		* * `.toString`: A human-readable string output.
+		* 
+		*/
+	auto getUpdateInfo() const {
+		static struct OutputUpdateInfo {
+			string output;
+			string input;
+			bool needsUpdate;
+			bool exists;
 
-		foreach (i, o; outputs) {
-			import std.algorithm: countUntil;
-			import std.format;
+			string toString() const {
+				import std.format;
 
-			if (!o.exists)
-				// Output does not exist altogether.
-				res[i] = o.format!`"%s" nonexistent, needs update.`;
-			else if (auto j = inputTimes.countUntil!"a > b"(o.timeLastModified) + 1)
-				// Output exists, older than an input.
-				res[i] = o.format!`"%s" is older than "%s", needs update.`(inputs[j-1]);
-			else
-				// Output is newer than all inputs.
-				res[i] = o.format!`"%s" is newer than all inputs, does not need update.`;
+				if (!exists)
+					return output.format!`"%s" nonexistent, needs update.`;
+				else if (needsUpdate)
+					return output.format!`"%s" is older than "%s", needs update.`(input);
+				else
+					return output.format!`"%s" is newest, does not need update.`;
+			}
 		}
 
-		return res;
+		import std.algorithm: map;
+
+		return outputs.map!((o) {
+			import std.algorithm: countUntil;
+
+			OutputUpdateInfo res = OutputUpdateInfo(o, null, true, o.exists);
+
+			if (!res.exists) {}
+			else if (auto j = inputTimes.countUntil!"a > b"(o.timeLastModified) + 1)
+				res.input = inputs[j-1];
+			else
+				res.needsUpdate = false;
+
+			return res;
+		});
 	}
 
 	/// Stringifier.
