@@ -23,31 +23,40 @@ struct Rule {
 	/// Input and output file names.
 	string[] inputs, outputs;
 
+	/// Whether the rule is invalid (true) or not.
+	@property bool invalid() const {
+		import std.algorithm: canFind;
+		import std.functional: memoize;
+
+		return memoize!(() => inputs.canFind!(i => !i.exists))();
+	}
+
 	/// Input modification times.
-	@property SysTime[] inputTimes() const {
+	@property Nullable!(SysTime[]) inputTimes() const {
 		import std.algorithm: map;
 		import std.array: array;
 		import std.functional: memoize;
 
-		return memoize!(() => inputs.map!timeLastModified.array)();
+		return memoize!(() => invalid
+				? Nullable!(SysTime[])()
+				: inputs.map!timeLastModified.array.nullable)();
 	}
 
 	/// Latest input modification time.
-	@property SysTime lastInputMod() const {
+	@property Nullable!SysTime lastInputMod() const {
 		import std.algorithm: maxElement;
 		import std.functional: memoize;
 
-		return memoize!(() => inputTimes.maxElement)();
+		return memoize!(() => inputTimes.apply!maxElement)();
 	}
 
 	/// Whether an update is needed or not.
-	@property bool updateNeeded() const {
-		import std.algorithm: until;
+	@property Nullable!bool updateNeeded() const {
+		import std.algorithm: canFind;
 		import std.functional: memoize;
 
-		return memoize!(() => !outputs
-				.until!(o => !o.exists || o.timeLastModified < lastInputMod)
-				.empty)();
+		return memoize!(() => lastInputMod.apply!(m => outputs
+					.canFind!(o => !o.exists || o.timeLastModified < m)))();
 	}
 
 	/**** Returns verbose information about update requirements.
@@ -66,6 +75,7 @@ struct Rule {
 		* 
 		*/
 	auto getUpdateInfo() const {
+		// The output struct we use
 		static struct OutputUpdateInfo {
 			string output;
 			string input;
@@ -105,15 +115,16 @@ struct Rule {
 	string toString() const {
 		import std.format;
 
-		return format!`{%(%s%|, %)} -> {%(%s%|, %)} via "%-(%s%|; %)" (%s update)`
-			(inputs, outputs, commands, updateNeeded ? "needs" : "does not need");
+		return format!`{%(%s%| %)} -> {%(%s%| %)} via {%(%s%|, %)} (%s)`
+			(inputs, outputs, commands, updateNeeded
+			 .apply!(n => (n ? "needs" : "does not need") ~ " update").get("invalid!"));
 	}
 
 	/// Verbose stringifier.
 	string toString(bool verbose) const {
 		import std.format;
 
-		if (verbose)
+		if (verbose && !invalid)
 			return toString ~ getUpdateInfo.format!"%-(\n* %s%)";
 		else
 			return toString;
