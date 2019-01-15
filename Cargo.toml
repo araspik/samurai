@@ -1,0 +1,7 @@
+[package]
+name = "smake"
+version = "0.0.2"
+authors = ["ARaspiK <araspik@protonmail.com>"]
+edition = "2019"
+
+[dependencies]
