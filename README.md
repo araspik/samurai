@@ -3,6 +3,12 @@ A Make program designed for SDLang-formatted Makefiles.
 
 Hopefully my first actually complete project.
 
+### Rust?
+I am trying out Rust, and I'd like to see if it could improve the code I have
+here. As such, this is a new branch I've made where I will try out Rust,
+file-by-file, on the whole project (there's not that much). If it works out,
+I'll switch completely to Rust, and if not, I'll continue using D.
+
 ### License: MIT
 Copyright (c) 2018 ARaspiK
 
