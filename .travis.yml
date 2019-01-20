@@ -8,3 +8,14 @@ matrix:
   allow_failures:
     - rust: nightly
   fast_finish: true
+
+after_success:
+  - wget https://raw.githubusercontent.com/DiscordHooks/travis-ci-discord-webhook/master/send.sh
+  - sh send.sh success $DISCORD_WEBHOOK
+
+after_failure:
+  - wget https://raw.githubusercontent.com/DiscordHooks/travis-ci-discord-webhook/master/send.sh
+  - sh send.sh failure $DISCORD_WEBHOOK
+
+notifications:
+  email: false
