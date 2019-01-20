@@ -10,6 +10,7 @@ file-by-file, on the whole project (there's not that much). If it works out,
 I'll switch completely to Rust, and if not, I'll continue using D.
 
 ### License: MIT
+```
 Copyright (c) 2018 ARaspiK
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,3 +30,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
