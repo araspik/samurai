@@ -16,11 +16,10 @@ use std::{io, fs};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 use std::fmt;
+use serde_derive::{Serialize, Deserialize};
 
 /// A basic rule to execute.
 pub struct Rule {
-    /// The name of the rule.
-    name: String,
     /// Commands to run to execute the rule.
     cmds: Vec<String>,
     /// Input files (paths and modification times).
@@ -32,24 +31,33 @@ pub struct Rule {
 /// Information about an output's update requirements.
 pub struct UpdateReq<'a> {
     /// The path to the output.
-    path: &'a Path,
+    pub path: &'a Path,
     /// The modification time of the output (if it existed)
     time: Option<SystemTime>,
     /// The path to an input (if an input was modified after the output).
     inps: Option<Vec<&'a Path>>,
 }
 
+/// A Rule created for (de)serialization purposes.
+#[derive(Serialize, Deserialize)]
+pub(crate) struct RuleData {
+    pub cmds: Vec<String>,
+    #[serde(alias = "ins")]
+    pub inputs: Vec<String>,
+    #[serde(alias = "outs")]
+    pub outputs: Vec<String>,
+}
+
 impl Rule {
     /**
-     * Creates a Rule given the name, commands, and inputs and outputs.
+     * Creates a Rule given the commands, inputs and outputs.
      *
      * The inputs and outputs are searched for and (if found) their last
      * modification time is recorded.
      */
-    pub fn new(name: String, cmds: Vec<String>,
-            inps: Vec<String>, outs: Vec<String>) -> io::Result<Rule> {
+    pub fn new(cmds: Vec<String>, inps: Vec<String>, outs: Vec<String>)
+            -> io::Result<Rule> {
         Ok(Rule {
-            name, // Same name
             cmds, // Same command list
             // Look for inputs that can't be accessed and fail on them.
             // Simultaneously, grab their latest modification time.
@@ -132,6 +140,15 @@ impl Rule {
         }
         res
     }
+
+    /**
+     * Converts a RuleData into a Rule.
+     *
+     * For serialization purposes.
+     */
+    pub(crate) fn from_data(data: &RuleData) -> io::Result<Rule> {
+        Self::new(data.cmds.clone(), data.inputs.clone(), data.outputs.clone())
+    }
 }
 
 impl fmt::Display for Rule {
@@ -142,6 +159,20 @@ impl fmt::Display for Rule {
             self.outs.iter().map(|o| o.0.to_str().unwrap())
                 .fold(String::new(), |s, o| s + o + ", "),
             self.cmds)
+    }
+}
+
+impl From<Rule> for RuleData {
+    fn from(data: Rule) -> Self {
+        Self {
+            cmds: data.cmds,
+            inputs: data.inps.iter()
+                .map(|i| i.0.to_str().unwrap().to_string())
+                .collect::<Vec<_>>(),
+            outputs: data.outs.iter()
+                .map(|o| o.0.to_str().unwrap().to_string())
+                .collect::<Vec<_>>(),
+        }
     }
 }
 
@@ -162,8 +193,10 @@ impl<'a> UpdateReq<'a> {
 impl<'a> fmt::Display for UpdateReq<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if let Some(inps) = self.inps.as_ref() {
-            write!(f, "\"{}\" older than {:?}, needs update.",
-                self.path.to_str().unwrap(), inps)
+            write!(f, "\"{}\" older than {}, needs update.",
+                self.path.to_str().unwrap(),
+                inps.iter().map(|i| i.to_str().unwrap())
+                    .fold(String::new(), |s, i| s + i + ", "))
         } else if self.time.is_some() {
             write!(f, "\"{}\" is newer than all inputs, does not need update.",
                 self.path.to_str().unwrap())
