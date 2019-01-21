@@ -153,11 +153,11 @@ impl Rule {
 
 impl fmt::Display for Rule {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} -> {} via {:?}",
+        write!(f, "{:?} -> {:?} via {:?}",
             self.inps.iter().map(|i| i.0.to_str().unwrap())
-                .fold(String::new(), |s, i| s + i + ", "),
+                .collect::<Vec<_>>(),
             self.outs.iter().map(|o| o.0.to_str().unwrap())
-                .fold(String::new(), |s, o| s + o + ", "),
+                .collect::<Vec<_>>(),
             self.cmds)
     }
 }

@@ -19,10 +19,21 @@ pub struct File {
 }
 
 impl File {
-    /// Parses the given file.
+    /// Parses from the given Reader.
     pub fn from_reader<R: io::Read>(reader: R) -> serde_yaml::Result<File> {
         let data: HashMap<String, RuleData>
             = serde_yaml::from_reader(reader)?;
+
+        Ok(File {
+            rules: HashMap::from_iter(data.iter()
+                .map(|(name, rule)| (name.to_string(), Rule::from_data(rule))))
+        })
+    }
+
+    /// Parses the string.
+    pub fn from_str(text: &str) -> serde_yaml::Result<File> {
+        let data: HashMap<String, RuleData>
+            = serde_yaml::from_str(text)?;
 
         Ok(File {
             rules: HashMap::from_iter(data.iter()
