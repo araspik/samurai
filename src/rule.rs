@@ -12,10 +12,12 @@
   * License: MIT
   */
 
+use crate as smake;
 use std::{io, fs};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 use std::fmt;
+use serde_yaml;
 use serde_derive::{Serialize, Deserialize};
 
 /// A basic rule to execute.
@@ -56,7 +58,7 @@ impl Rule {
      * modification time is recorded.
      */
     pub fn new(cmds: Vec<String>, inps: Vec<String>, outs: Vec<String>)
-            -> io::Result<Rule> {
+            -> smake::Result<Rule> {
         Ok(Rule {
             cmds, // Same command list
             // Look for inputs that can't be accessed and fail on them.
@@ -64,9 +66,13 @@ impl Rule {
             inps: inps.iter()
                 .map(move |s| PathBuf::from(s))
                 .map(|p| fs::metadata(p.as_path())
-                     .and_then(|m| m.modified())
-                     .map(|mt| (p, mt)))
-                .collect::<io::Result<Vec<_>>>()?,
+                    .and_then(|m| m.modified())
+                    .map(|mt| (p.clone(), mt))
+                    .map_err(|e| match e.kind() {
+                        io::ErrorKind::NotFound => smake::Error::NoFile(p),
+                        _ => smake::Error::Other(e)
+                    }))
+                .collect::<smake::Result<Vec<_>>>()?,
             // Outputs don't have to exist, but grab their modification time if
             // they do.
             outs: outs.iter()
@@ -146,7 +152,7 @@ impl Rule {
      *
      * For serialization purposes.
      */
-    pub(crate) fn from_data(data: &RuleData) -> io::Result<Rule> {
+    pub(crate) fn from_data(data: &RuleData) -> smake::Result<Rule> {
         Self::new(data.cmds.clone(), data.inputs.clone(), data.outputs.clone())
     }
 }

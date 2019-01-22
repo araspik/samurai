@@ -6,48 +6,59 @@
   * License: MIT
   */
 
-use super::rule::{Rule, RuleData};
-
-use std::io;
+use crate as smake;
+use crate::rule::{Rule, RuleData};
+use std::{io, fs};
+use std::path::PathBuf;
 use std::collections::HashMap;
 use serde_yaml;
-use std::iter::FromIterator;
 
 /// Representation of a SMakefile.
 pub struct File {
-    rules: HashMap<String, io::Result<Rule>>,
+    pub rules: HashMap<String, smake::Result<Rule>>,
 }
 
 impl File {
-    /// Parses from the given Reader.
-    pub fn from_reader<R: io::Read>(reader: R) -> serde_yaml::Result<File> {
-        let data: HashMap<String, RuleData>
-            = serde_yaml::from_reader(reader)?;
+    /// Parses from the given file.
+    pub fn from_file(path: &String) -> smake::Result<File> {
+        let path = PathBuf::from(path);
+        let file = fs::File::open(&path)
+            .map_err(|e| match e.kind() {
+                io::ErrorKind::NotFound
+                    => smake::Error::NoFile(path),
+                _ => smake::Error::Other(e),
+            })?;
+        Self::from_reader(file)
+    }
 
+    /// Parses from the given Reader.
+    pub fn from_reader<R: io::Read>(read: R) -> smake::Result<File> {
         Ok(File {
-            rules: HashMap::from_iter(data.iter()
-                .map(|(name, rule)| (name.to_string(), Rule::from_data(rule))))
+            rules: serde_yaml::from_reader::<_,HashMap<String, RuleData>>(read)?
+                .iter()
+                .map(|(name, rule)| (name.to_string(), Rule::from_data(rule)))
+                .collect()
         })
     }
 
-    /// Parses the string.
-    pub fn from_str(text: &str) -> serde_yaml::Result<File> {
-        let data: HashMap<String, RuleData>
-            = serde_yaml::from_str(text)?;
-
+    /// Parses from the given string.
+    pub fn from_str(text: &str) -> smake::Result<File> {
         Ok(File {
-            rules: HashMap::from_iter(data.iter()
-                .map(|(name, rule)| (name.to_string(), Rule::from_data(rule))))
+            rules: serde_yaml::from_str::<HashMap<String, RuleData>>(text)?
+                .iter()
+                .map(|(name, rule)| (name.to_string(), Rule::from_data(rule)))
+                .collect()
         })
     }
 
     /// Returns a reference to a rule if it exists.
-    pub fn get(&self, name: &String) -> Option<&io::Result<Rule>> {
+    pub fn get(&self, name: &String) -> Option<&smake::Result<Rule>> {
         self.rules.get(name)
     }
 
     /// Returns a mutable reference to a rule if it exists.
-    pub fn get_mut(&mut self, name: &String) -> Option<&mut io::Result<Rule>> {
+    pub fn get_mut(&mut self, name: &String)
+            -> Option<&mut smake::Result<Rule>> {
         self.rules.get_mut(name)
     }
 }

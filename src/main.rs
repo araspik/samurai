@@ -9,41 +9,76 @@
 extern crate getopts;
 
 use smake;
-use std::{env, fs};
-use std::path::PathBuf;
-use getopts::Options;
+use std::{env, error::Error, process::exit};
+use getopts as getopt;
 
-fn main() {
+struct Opts {
+    opts: getopt::Options,
+    prog: String,
+    path: String,
+    args: Vec<String>,
+}
+
+fn print_help(prog: &String, opts: &getopt::Options) {
+    let usage = format!("Usage: {} [options] TARGET", prog);
+    eprint!("{}", opts.usage(&usage));
+}
+
+fn parse_opts() -> Result<Option<Opts>, getopt::Fail> {
+    // Get args
     let args = env::args().collect::<Vec<_>>();
+    let prog = args[0].to_string();
 
-    let mut opts = Options::new();
+    // Set up options
+    let mut opts = getopt::Options::new();
     opts.optopt( "f", "file", "The SMakefile to read from", "PATH");
     opts.optflag("h", "help", "Provides help information");
 
-    let matches = opts.parse(&args[1..])
-        .unwrap_or_else(|e| panic!(e.to_string()));
+    // Parse
+    let matches = opts.parse(&args[1..])?;
 
-    if matches.opt_present("h") || matches.free.is_empty() {
-        let usage = format!("Usage: {} [options] TARGETS", args[0]);
-        print!("{}", opts.usage(&usage));
-        return;
+    // Special case: help info
+    if matches.opt_present("h") {
+        print_help(&prog, &opts);
+        return Ok(None);
     }
 
-    let file = fs::File::open(PathBuf::from(matches.opt_str("f")
-            .unwrap_or("./SMakefile".to_string())))
-        .unwrap_or_else(|e| panic!(e.to_string()));
+    // Gather args and return
+    Ok(Some(Opts {
+        opts,
+        prog,
+        path: matches.opt_str("f")
+                .unwrap_or("./SMakefile".to_string()),
+        args: matches.free,
+    }))
+}
 
-    let rules = smake::File::from_reader(file)
-        .unwrap_or_else(|e| panic!(e.to_string()));
+fn work(opts: Opts) -> Result<(), Box<dyn Error>> {
+    if opts.args.is_empty() {
+        eprintln!("Not enough arguments provided!");
+        print_help(&opts.prog, &opts.opts);
+        return Ok(());
+    }
 
-    let rule = rules.get(matches.free.get(0).unwrap());
+    let mut file = smake::File::from_file(&opts.path)
+        .map_err(|err| Box::new(err) as Box<dyn Error>)?;
 
-    if let Some(rule) = rule {
-        match rule {
-            Ok(rule) => println!("{}", rule),
-            Err(err) => println!("Invalid rule: {}", err.to_string()),
-        }
+    let target = &opts.args[0];
+
+    if let Some(rule) = file.rules.remove(target) {
+        rule.map(|rule| println!("{}", rule))
+            .map_err(|err| Box::new(err) as Box<dyn Error>)
     } else {
-        println!("Target {} not found!", matches.free.get(0).unwrap());
+        eprintln!("Target \"{}\" not found!", target);
+        Ok(())
+    }
+}
+
+fn main() {
+    if let Err(err) = parse_opts()
+        .map_err(|err| Box::new(err) as Box<dyn Error>)
+        .and_then(|opts| opts.map(|opts| work(opts)).unwrap_or(Ok(()))) {
+        eprintln!("{}", err);
+        exit(1)
     }
 }
