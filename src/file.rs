@@ -15,7 +15,7 @@ use serde_yaml;
 
 /// Representation of a SMakefile.
 pub struct File {
-    pub rules: HashMap<String, smake::Result<Rule>>,
+    pub rules: HashMap<String, Rule>,
 }
 
 impl File {
@@ -24,9 +24,8 @@ impl File {
         let path = PathBuf::from(path);
         let file = fs::File::open(&path)
             .map_err(|e| match e.kind() {
-                io::ErrorKind::NotFound
-                    => smake::Error::NoFile(path),
-                _ => smake::Error::Other(e),
+                io::ErrorKind::NotFound => smake::Error::NoFile{path},
+                _ => smake::Error::Other{source: e},
             })?;
         Self::from_reader(file)
     }
@@ -35,9 +34,10 @@ impl File {
     pub fn from_reader<R: io::Read>(read: R) -> smake::Result<File> {
         Ok(File {
             rules: serde_yaml::from_reader::<_,HashMap<String, RuleData>>(read)?
-                .iter()
-                .map(|(name, rule)| (name.to_string(), Rule::from_data(rule)))
-                .collect()
+                .into_iter()
+                .map(|(name, rule)| Rule::from_data(rule)
+                     .map(|rule| (name, rule)))
+                .collect::<smake::Result<HashMap<_, _>>>()?
         })
     }
 
@@ -45,20 +45,20 @@ impl File {
     pub fn from_str(text: &str) -> smake::Result<File> {
         Ok(File {
             rules: serde_yaml::from_str::<HashMap<String, RuleData>>(text)?
-                .iter()
-                .map(|(name, rule)| (name.to_string(), Rule::from_data(rule)))
-                .collect()
+                .into_iter()
+                .map(|(name, rule)| Rule::from_data(rule)
+                    .map(|rule| (name, rule)))
+                .collect::<smake::Result<HashMap<_, _>>>()?
         })
     }
 
     /// Returns a reference to a rule if it exists.
-    pub fn get(&self, name: &String) -> Option<&smake::Result<Rule>> {
+    pub fn get(&self, name: &String) -> Option<&Rule> {
         self.rules.get(name)
     }
 
     /// Returns a mutable reference to a rule if it exists.
-    pub fn get_mut(&mut self, name: &String)
-            -> Option<&mut smake::Result<Rule>> {
+    pub fn get_mut(&mut self, name: &String) -> Option<&mut Rule> {
         self.rules.get_mut(name)
     }
 }

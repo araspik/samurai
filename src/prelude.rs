@@ -5,20 +5,26 @@
 //! Author: ARaspiK  
 //! License: MIT  
 
-use std::{error, fmt, io};
-use std::path::PathBuf;
+use std::{io, path::PathBuf};
 use serde_yaml;
 
-/// An error type for SMake.
+custom_error! {pub Error
+    NoFile {path: PathBuf}
+        = @{format!("File \"{}\" not found!", path.to_str().unwrap())},
+    Parsing{source: serde_yaml::Error}  = "Parsing error",
+    Other  {source: io::Error}          = "I/O error"
+}
+
+/// A Result type for SMake.
+pub type Result<T> = std::result::Result<T, Error>;
+
+/*/// An error type for SMake.
 #[derive(Debug)]
 pub enum Error {
     NoFile(PathBuf),
     Parsing(serde_yaml::Error),
     Other(io::Error),
 }
-
-/// A Result type for SMake.
-pub type Result<T> = std::result::Result<T, Error>;
 
 impl error::Error for Error {
     /// Returns a cause for this error, if any.
@@ -55,4 +61,4 @@ impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
         Error::Other(err)
     }
-}
+}*/

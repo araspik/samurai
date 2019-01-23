@@ -6,17 +6,35 @@
 //! Author: ARaspiK  
 //! License: MIT  
 
+#[macro_use] extern crate custom_error;
 extern crate getopts;
 
 use smake;
-use std::{env, error::Error, process::exit};
+use std::{env, error::Error, fmt, process::exit};
 use getopts as getopt;
 
+custom_error!{ ErrStr<T>
+    Data{data: T} = "{data}"
+}
+
+impl<T> ErrStr<T>
+        where T: fmt::Display {
+    pub fn new(data: T) -> Self {
+        ErrStr::Data {data}
+    }
+
+    pub fn result<R>(data: T) -> Result<R, Self> {
+        Err(ErrStr::Data {data})
+    }
+}
+
+fn box_err<'a, T: Error + 'a>(err: T) -> Box<dyn Error + 'a> {
+    Box::new(err) as Box<dyn Error + 'a>
+}
+
 struct Opts {
-    opts: getopt::Options,
-    prog: String,
     path: String,
-    args: Vec<String>,
+    targets: Vec<String>,
 }
 
 fn print_help(prog: &String, opts: &getopt::Options) {
@@ -24,7 +42,7 @@ fn print_help(prog: &String, opts: &getopt::Options) {
     eprint!("{}", opts.usage(&usage));
 }
 
-fn parse_opts() -> Result<Option<Opts>, getopt::Fail> {
+fn parse_opts() -> Result<Option<Opts>, Box<dyn Error>> {
     // Get args
     let args = env::args().collect::<Vec<_>>();
     let prog = args[0].to_string();
@@ -35,41 +53,33 @@ fn parse_opts() -> Result<Option<Opts>, getopt::Fail> {
     opts.optflag("h", "help", "Provides help information");
 
     // Parse
-    let matches = opts.parse(&args[1..])?;
+    let matches = opts.parse(&args[1..]).map_err(box_err)?;
 
     // Special case: help info
-    if matches.opt_present("h") {
+    if matches.opt_present("h") || matches.free.is_empty() {
         print_help(&prog, &opts);
         return Ok(None);
     }
 
     // Gather args and return
     Ok(Some(Opts {
-        opts,
-        prog,
-        path: matches.opt_str("f")
-                .unwrap_or("./SMakefile".to_string()),
-        args: matches.free,
+        path: matches.opt_str("f").unwrap_or("SMakefile".to_string()),
+        targets: matches.free,
     }))
 }
 
 fn work(opts: Opts) -> Result<(), Box<dyn Error>> {
-    if opts.args.is_empty() {
-        eprintln!("Not enough arguments provided!");
-        print_help(&opts.prog, &opts.opts);
-        return Ok(());
-    }
+    // Parse file
+    let file = smake::File::from_file(&opts.path)?;
 
-    let mut file = smake::File::from_file(&opts.path)
-        .map_err(|err| Box::new(err) as Box<dyn Error>)?;
-
-    for target in opts.args.iter() {
-        if let Some(rule) = file.rules.remove(target) {
-            rule.map(|rule| println!("{}", rule))
-                .map_err(|err| Box::new(err) as Box<dyn Error>)?
-        } else {
-            eprintln!("Target \"{}\" not found!", target);
-        }
+    // For every target
+    for target in opts.targets.iter() {
+        let rule = file.rules.get(target)
+            .map_or_else(
+                || ErrStr::result(format!("Target \"{}\" not found!", target))
+                    .map_err(box_err),
+                |rule| Ok(rule))?;
+        println!("{}", rule);
     }
 
     Ok(())
@@ -77,8 +87,7 @@ fn work(opts: Opts) -> Result<(), Box<dyn Error>> {
 
 fn main() {
     if let Err(err) = parse_opts()
-        .map_err(|err| Box::new(err) as Box<dyn Error>)
-        .and_then(|opts| opts.map(|opts| work(opts)).unwrap_or(Ok(()))) {
+            .and_then(|opts| opts.map(|opts| work(opts)).unwrap_or(Ok(()))) {
         eprintln!("{}", err);
         exit(1)
     }

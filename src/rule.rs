@@ -65,12 +65,12 @@ impl Rule {
             // Simultaneously, grab their latest modification time.
             inps: inps.iter()
                 .map(move |s| PathBuf::from(s))
-                .map(|p| fs::metadata(p.as_path())
+                .map(|path| fs::metadata(path.as_path())
                     .and_then(|m| m.modified())
-                    .map(|mt| (p.clone(), mt))
+                    .map(|mt| (path.clone(), mt))
                     .map_err(|e| match e.kind() {
-                        io::ErrorKind::NotFound => smake::Error::NoFile(p),
-                        _ => smake::Error::Other(e)
+                        io::ErrorKind::NotFound => smake::Error::NoFile{path},
+                        _ => smake::Error::Other{source:e}
                     }))
                 .collect::<smake::Result<Vec<_>>>()?,
             // Outputs don't have to exist, but grab their modification time if
@@ -152,8 +152,8 @@ impl Rule {
      *
      * For serialization purposes.
      */
-    pub(crate) fn from_data(data: &RuleData) -> smake::Result<Rule> {
-        Self::new(data.cmds.clone(), data.inputs.clone(), data.outputs.clone())
+    pub(crate) fn from_data(data: RuleData) -> smake::Result<Rule> {
+        Self::new(data.cmds, data.inputs, data.outputs)
     }
 }
 
