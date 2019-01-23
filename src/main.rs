@@ -63,15 +63,16 @@ fn work(opts: Opts) -> Result<(), Box<dyn Error>> {
     let mut file = smake::File::from_file(&opts.path)
         .map_err(|err| Box::new(err) as Box<dyn Error>)?;
 
-    let target = &opts.args[0];
-
-    if let Some(rule) = file.rules.remove(target) {
-        rule.map(|rule| println!("{}", rule))
-            .map_err(|err| Box::new(err) as Box<dyn Error>)
-    } else {
-        eprintln!("Target \"{}\" not found!", target);
-        Ok(())
+    for target in opts.args.iter() {
+        if let Some(rule) = file.rules.remove(target) {
+            rule.map(|rule| println!("{}", rule))
+                .map_err(|err| Box::new(err) as Box<dyn Error>)?
+        } else {
+            eprintln!("Target \"{}\" not found!", target);
+        }
     }
+
+    Ok(())
 }
 
 fn main() {
