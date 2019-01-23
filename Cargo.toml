@@ -1,0 +1,21 @@
+[package]
+name = "smake"
+version = "0.0.2"
+authors = ["ARaspiK <araspik@protonmail.com>"]
+license = "MIT"
+description = "A simple Make program"
+edition = "2018"
+
+repository = "https://github.com/araspik/smake"
+readme = "README.md"
+keywords = ["make"]
+categories = ["development-tools::build-utils", "development-tools"]
+
+[badges]
+travis-ci = {repository = "araspik/smake", branch = "rust"}
+
+[dependencies]
+serde = "1.0.85"
+serde_derive = "1.0.85"
+serde_yaml = "0.8.8"
+getopts = "0.2.18"

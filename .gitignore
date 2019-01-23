@@ -16,11 +16,6 @@ build/
 *.exe
 app
 
-# DUB
-.dub
-docs.json
-__dummy.html
-docs/
-
-# Code coverage
-*.lst
+# Cargo
+/target
+**/*.rs.bk
