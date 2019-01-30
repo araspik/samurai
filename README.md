@@ -1,13 +1,9 @@
-# `smake`: A Simple/SDLang Make program
-A Make program designed for SDLang-formatted Makefiles.
+# SMake
+SMake is a simple Make program, written in Rust.
 
 Hopefully my first actually complete project.
 
-### Rust?
-I am trying out Rust, and I'd like to see if it could improve the code I have
-here. As such, this is a new branch I've made where I will try out Rust,
-file-by-file, on the whole project (there's not that much). If it works out,
-I'll switch completely to Rust, and if not, I'll continue using D.
+View the [specification][spec] to see what this project will look like.
 
 ### License: MIT
 ```
@@ -31,3 +27,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+[spec]: https:?/github.com/araspik/smake/wiki/Specification
+        "SMake Specification"
