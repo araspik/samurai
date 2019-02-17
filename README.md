@@ -1,7 +1,7 @@
-# SMake
-SMake is a simple Make program, written in Rust.
+# Samurai
+Samurai is (will be) a heavy-duty Make program, written in Rust.
 
-Hopefully my first actually complete project.
+Hopefully, this is my first actually complete project.
 
 View the [specification][spec] to see what this project will look like.
 
@@ -28,5 +28,5 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-[spec]: https:?/github.com/araspik/smake/wiki/Specification
+[spec]: https://github.com/araspik/samurai/wiki/Specification
         "SMake Specification"

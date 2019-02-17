@@ -1,12 +1,12 @@
 [package]
 
 # General Information
-name = "samurai"
-version = "0.0.3"
+name = "samurai_app"
+version = "0.0.1"
 authors = [
     "ARaspiK <araspik@protonmail.com>"
 ]
-description = "A heavy-duty Make library"
+description = "A heavy-duty make program"
 license = "MIT"
 
 # Public Use Metadata
@@ -16,14 +16,19 @@ homepage = "https://github.com/araspik/samurai/blob/master/README.md"
 readme = "README.md"
 keywords = [
     "make",
+    "make-program",
 ]
 categories = [
+    "command-line-utilities",
     "development-tools",
     "development-tools::build-utils",
 ]
 
 # Code-specific Metadata
 edition = '2018'
+
+# Workspace
+workspace = ".."
 
 # Public Display Badges
 [badges]
@@ -37,15 +42,6 @@ maintenance = { status = "actively-developed" }
 
 # Dependencies
 [dependencies]
-custom_error = "~1.4.0"
-regex = "~1.1.0"
 
 # Features
 [features]
-
-# Workspace
-[workspace]
-members = [
-	"formats",
-	"app",
-]

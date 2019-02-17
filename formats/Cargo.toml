@@ -1,29 +1,33 @@
 [package]
 
 # General Information
-name = "samurai"
-version = "0.0.3"
+name = "samurai_formats"
+version = "0.0.1"
 authors = [
     "ARaspiK <araspik@protonmail.com>"
 ]
-description = "A heavy-duty Make library"
+description = "Default formats for Samurai"
 license = "MIT"
 
 # Public Use Metadata
 publish = true
-documentation = "https://docs.rs/samurai"
+documentation = "https://docs.rs/samurai_formats"
 homepage = "https://github.com/araspik/samurai/blob/master/README.md"
-readme = "README.md"
+readme = "../README.md"
 keywords = [
+    "formats",
+    "parsing",
     "make",
 ]
 categories = [
-    "development-tools",
-    "development-tools::build-utils",
+    "parsing",
 ]
 
 # Code-specific Metadata
 edition = '2018'
+
+# Worspace
+workspace = ".."
 
 # Public Display Badges
 [badges]
@@ -37,15 +41,6 @@ maintenance = { status = "actively-developed" }
 
 # Dependencies
 [dependencies]
-custom_error = "~1.4.0"
-regex = "~1.1.0"
 
 # Features
 [features]
-
-# Workspace
-[workspace]
-members = [
-	"formats",
-	"app",
-]

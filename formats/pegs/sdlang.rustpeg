@@ -1,0 +1,101 @@
+use chrono::prelude::*;
+use chrono::{DateTime};
+use chrono::{NaiveDate, NaiveDateTime};
+use chrono::{Local, Utc, FixedOffset, TimeZone};
+
+use std::time::Duration;
+
+use super::Value;
+
+// Whitespace and comments
+white
+    = (" " / "\n" / "\r" / "\t" / "\\\n" / comment)+
+comment
+    = "/*" (!"*/" .)* "*/"
+    / ("//" / "--" / "#") (!"\n" .)* "\n"
+
+// Global stuffs
+ident -> &'input str
+    = $([a-zA-Z][a-zA-Z0-9.$-]+)
+digit -> char
+    = c:[0-9] {c}
+
+// Values
+value -> Value
+    = data:string { Value::String(data) }
+    / data:base64 { Value::Base64(data) }
+    / data:date { Value::Date(data) }
+    / data:datetime { Value::DateTime(data) }
+    / data:duration { Value::Duration(data) }
+    / data:number { Value::Number(data) } 
+    / data:decimal { Value::Decimal(data) }
+    / data:boolean { Value::Boolean(data) }
+    / null { Value::Null }
+
+string -> String
+    = "\"" data:("\\\"" {"\""} / !("\n" / "\"") c:. {c})* "\"" {
+        String::from_iter(data)
+    } / "`" data:$($(!("\n" / "`") .)*) "`" {
+        String::from_iter(data)
+    }
+
+date -> NaiveDate
+    = year:$([0-9]*<4>) "/" month:$([0-9]*<2>) "/" day:$([0-9]*<2>) {?
+        let year = year.parse::<i32>()?;
+        let month = month.parse::<u32>()?;
+        let day = day.parse::<u32>()?;
+
+        Ok(NaiveDate::from_ymd_opt(year, month, day)?)
+    }
+
+naive_datetime -> NaiveDateTime
+    = date:date white h:$([0-9]*<2>) ":" m:$([0-9]*<2>) ":" s:$([0-9]*<2>) "." ms:$([0-9]*<3>) {?
+        let h = h.parse::<u32>()?;
+        let m = m.parse::<u32>()?;
+        let s = s.parse::<u32>()?;
+        let ms = ms.parse::<u32>()?;
+
+        Ok(date?.and_hms_micro_opt(h, m, s, ms)?)
+    }
+
+datetime -> DateTime<FixedOffset>
+    = datetime:naive_datetime utc:"-UTC"? {
+        if utc.is_some() {
+            Utc.fix().from_utc_datetime(datetime)
+        } else {
+            Local.timestamp(0,0).timezone()
+                .offset_from_utc_date(&Utc.timestamp(0,0).naive_utc())
+                .from_local_datetime(datetime).unwrap()
+        }
+    }
+
+duration -> Duration
+    = d:(n:$([0-9]+) "d:" {n})? h:$([0-9]*<2>) ":" m:$([0-9]*<2>) ":" s:$([0-9]*<2>) ms:("." n:$([0-9]*<3>) {n})? {
+        let d = d.map_or(0, |d| d.parse::<u32>().unwrap());
+        let h = h.parse::<u32>().unwrap();
+        let m = m.parse::<u32>().unwrap();
+        let s = s.parse::<u32>().unwrap();
+        let ms = ms.map_or(0, |ms| ms.parse::<u32>().unwrap());
+
+        Duration::new(s + 60 * (m + 60 * (h + 24 * d)), 1000 * ms)
+    }
+
+number -> i128
+    = n:$([0-9]+) !("L" / "BD") {? Ok(n.parse::<i32>()? as i128) }
+    / n:$([0-9]+) "L" {? Ok(n.parse::<i64>()? as i128) }
+    / n:$([0-9]+) "BD" {? Ok(n.parse::<i128>()?) }
+
+decimal -> f64
+    = n:$([0-9]+ "." [0-9]+) "f" {? Ok(n.parse::<f32>()? as f64) }
+    / n:$([0-9]+ "." [0-9]+) !"f" {? Ok(n.parse::<f64>()?) }
+
+boolean -> bool
+    = ("true" / "on") {true}
+    / ("false" / "off") {false}
+
+null = "null"
+
+base64 -> Vec<u8>
+    = "[" white? data:(c:[a-zA-Z+/] white? {c})* "]" {?
+        Ok(base64::decode(data.as_slice())?)
+    }
