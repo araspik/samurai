@@ -17,5 +17,6 @@ build/
 app
 
 # Cargo
-/target
+target
 **/*.rs.bk
+Cargo.lock

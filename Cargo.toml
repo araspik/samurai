@@ -15,8 +15,5 @@ categories = ["development-tools::build-utils", "development-tools"]
 travis-ci = {repository = "araspik/smake", branch = "rust"}
 
 [dependencies]
-serde = "1.0.85"
-serde_derive = "1.0.85"
-serde_yaml = "0.8.8"
-getopts = "0.2.18"
 custom_error = "1.3.0"
+regex = "1.1.0"
