@@ -1,21 +1,3 @@
-# Compiled Object files
-build/
-*.o
-*.obj
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Compiled Static libraries
-*.a
-*.lib
-
-# Executables
-*.exe
-app
-
-# Cargo
-/target
+target
 **/*.rs.bk
+Cargo.lock
